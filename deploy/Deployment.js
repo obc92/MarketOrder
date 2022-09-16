@@ -1,4 +1,4 @@
-const { getNamedAccounts, deployments, network, ethers } = require("hardhat")
+const { getNamedAccounts, deployments, network, ethers, run } = require("hardhat")
 const { networkConfig, developmentChains } = require("../helper-hardhat-config.js")
 const { verify } = require("../utils/verify.js")
 
@@ -25,12 +25,19 @@ module.exports = async function ({ getNameAccounts, deployments }) {
     //     subscriptionId = networkConfig[chainId]["subscriptionId"]
     // }
 
-    const priceFeedAddress = networkConfig [chainId]["priceFeedAddress"]
+    let ethUsdPriceFeedAddress
+    if (chainId == 31337) {
+        const ethUsdAggregator = await deployments.get("MockV3Aggregator")
+        ethUsdPriceFeedAddress = ethUsdAggregator.address
+    } else {
+        ethUsdPriceFeedAddress = networkConfig[chainId]["priceFeedAddress"]//Aqui es d'on treu el contract per treure el el preu de eth de aquest file: helper-hardhat-config
+    }
+    //const priceFeedAddress = networkConfig [chainId]["priceFeedAddress"]
     // const gasLane = networkConfig[chainId]["gasLane"]
     // const callbackGaslimit = networkConfig[chainId]["callbackGaslimit"]
     // const interval = networkConfig[chainId]["interval"]
 
-    const args = [priceFeedAddress]
+    const args = [ethUsdPriceFeedAddress]
     const MarketOrder = await deploy("MarketOrder", {
         from: deployer,
         args: args,

@@ -1,0 +1,41 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/MarketOrder.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.8;\n\nimport \"@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol\";\n//import \"@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol\"; // Keepers import\nimport \"./TokenPrice.sol\";\n\nerror Quantity_zero();\nerror Wallet_error();\n\ncontract MarketOrder{//} is KeeperCompatibleInterface {\n    using TokenPrice for uint256; //library\n\n    AggregatorV3Interface public priceFeed;\n\n    struct Dades {\n        uint256 Quantity;\n        uint256 Stop;\n    }\n\n    address payable [] private s_Wallets;\n    mapping (address => Dades) s_Registre;\n    address public immutable i_owner;\n    address public s_AddressFeed;\n\n\n\n    constructor ( address priceFeedAddress) {\n        i_owner = msg.sender;\n        s_AddressFeed = priceFeedAddress;\n        priceFeed = AggregatorV3Interface(s_AddressFeed);//0x8A753747A1Fa494EC906cE90E9f37563A8AF630e\n        \n    }\n\n    modifier onlyOwner{\n        require(msg.sender == i_owner);  \n        _;     \n    }\n\n    function Deposit(uint256 StopLoss ) public payable {//Deposita quantity i es registre  uint256 StopLoss \n        \n        //Pay subscription\n        if (msg.value == 0){\n            revert Quantity_zero();\n        }\n        //Add wallet to the s_Wallets\n        s_Wallets.push(payable(msg.sender));\n        //Start subscription time\n        Dades storage dades = s_Registre[msg.sender];\n        dades.Quantity += msg.value;\n        dades.Stop = StopLoss;\n    } \n\n    function Withdraw () public {\n        //Bloqueja si la wallet no esta\n        bool listed;\n        uint256 num;\n        address[] memory id = new address[](s_Wallets.length);\n        for (uint i = 0; i < s_Wallets.length; i++){\n            id[i] = s_Wallets[i];\n            if (listed = (msg.sender == id[i])) {\n                num = i;\n                break;\n            }\n        }\n        //require(listed, 'Wallet not listed');\n        if (!listed){\n            revert Wallet_error();\n        }\n        //Agafa la quanittat que te per fer el W\n        Dades memory Quantity = s_Registre[msg.sender];\n        uint256 Value = Quantity.Quantity;\n        (bool Success, ) = msg.sender.call{value: Value}(\"\");\n        require(Success);\n        //Reseteja les dades\n        Dades storage dades = s_Registre[msg.sender];\n        dades.Quantity = 0;\n        dades.Stop = 0;\n        //Borrar wallet que ha fet W\n        s_Wallets = Remove(num);\n\n    }\n\n    function Remove(uint num) internal returns(address payable [] memory) {// Borra la wallet del array borrant la posicio tmb\n\n        for (uint i = num; i < s_Wallets.length - 1; i++){\n            s_Wallets[i] = s_Wallets[i+1];\n        }\n        delete s_Wallets[s_Wallets.length-1];\n        s_Wallets.pop();\n        return s_Wallets;\n    }\n\n    function ModifyFeed(address NewFeed) external onlyOwner {\n        s_AddressFeed = NewFeed;\n        priceFeed = AggregatorV3Interface(s_AddressFeed);\n    }\n\n    //function getEThPrice() \n\n\n    // Public view functions\n    function ActualFeed() public view returns(address) {\n        return s_AddressFeed;\n    }\n    function CallQuantity(address add) public view returns (uint256){\n        Dades memory data = s_Registre[add];\n        return (data.Quantity);\n    }\n    function CallStop(address add) public view returns (uint256){\n        Dades memory data = s_Registre[add];\n        return (data.Stop);\n    }\n    function getMembers() public view returns (address[] memory){\n      address[] memory id = new address[](s_Wallets.length);\n      for (uint i = 0; i < s_Wallets.length; i++) {\n          id[i] = s_Wallets[i];\n      }\n      return id;\n    }\n    function getBalance() public view returns (uint256){\n        return (address(this).balance);\n    }\n}"
+    },
+    "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\ninterface AggregatorV3Interface {\n  function decimals() external view returns (uint8);\n\n  function description() external view returns (string memory);\n\n  function version() external view returns (uint256);\n\n  function getRoundData(uint80 _roundId)\n    external\n    view\n    returns (\n      uint80 roundId,\n      int256 answer,\n      uint256 startedAt,\n      uint256 updatedAt,\n      uint80 answeredInRound\n    );\n\n  function latestRoundData()\n    external\n    view\n    returns (\n      uint80 roundId,\n      int256 answer,\n      uint256 startedAt,\n      uint256 updatedAt,\n      uint80 answeredInRound\n    );\n}\n"
+    },
+    "contracts/TokenPrice.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.8;\n\nimport \"@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol\"; // PriceFeed contract imported from chainlink github\n\nlibrary TokenPrice {\n    /**\n     * Network: Rinkeby\n     * Aggregator: ETH/USD\n     * Address: 0x8A753747A1Fa494EC906cE90E9f37563A8AF630e\n     */\n    function getLatestPrice(AggregatorV3Interface priceFeed) internal view returns (uint256) {\n        (\n            /*uint80 roundID*/,\n            int256 price,\n            /*uint startedAt*/,\n            /*uint timeStamp*/,\n            /*uint80 answeredInRound*/\n        ) = priceFeed.latestRoundData();\n        return uint256(price);// Retorna 8 decimals\n    }\n\n    function ConversionToEth(uint256 DollaAmount, AggregatorV3Interface priceFeed) internal view returns(uint256) {\n        uint256 Price = getLatestPrice(priceFeed);\n        uint256 EthAmount = (DollaAmount * 100000000000)/Price;\n        return EthAmount;\n    }\n}"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": false,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}

@@ -20,9 +20,9 @@ library TokenPrice {
         return uint256(price);// Retorna 8 decimals
     }
 
-    function ConversionToEth(uint256 DollaAmount, AggregatorV3Interface priceFeed) internal view returns(uint256) {
+    function dolarValue(AggregatorV3Interface priceFeed) internal view returns(uint256) {
         uint256 Price = getLatestPrice(priceFeed);
-        uint256 EthAmount = (DollaAmount * 100000000000)/Price;
+        uint256 EthAmount = Price/100000000;
         return EthAmount;
     }
 }
