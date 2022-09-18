@@ -11,7 +11,7 @@ const { developmentChains, networkConfig } = require("../helper-hardhat-config.j
           const Value2 = ethers.utils.parseEther("10")
           const Value3 = ethers.utils.parseEther("20")
           const ArrayValue = [Value1, Value2, Value3]
-          const ArraySL = [1900, 2000, 1160]
+          const ArraySL = [3100, 2000, 1160]
 
           // let owner
           // let addr1
@@ -193,86 +193,86 @@ const { developmentChains, networkConfig } = require("../helper-hardhat-config.j
                   console.log(data)
                 })
               })
-            // describe("Testing Upkeepers ... ", async function () {
-            //   it("Check Keepers", async function () {
+            describe("Testing Upkeepers ... ", async function () {
+              it("Check Keepers", async function () {
                 
-            //     const additionalEntrances = 3
-            //     const startingIndex = 0
-            //     const accounts = await ethers.getSigners()
-            //     // console.log(`AA ${accounts.address}`) 
-            //     for (let i = startingIndex; i < startingIndex + additionalEntrances; i++) {
-            //       MarketOrder = MarketOrder.connect(accounts[i])
-            //       await MarketOrder.Deposit(ArraySL[i], { value: ArrayValue[i] })
-            //       console.log(`Account: ${accounts[i].address}  Value: ${ArrayValue[i]} SL: ${ArraySL[i]}`)                
-            //     }
+                const additionalEntrances = 3
+                const startingIndex = 0
+                const accounts = await ethers.getSigners()
+                // console.log(`AA ${accounts.address}`) 
+                for (let i = startingIndex; i < startingIndex + additionalEntrances; i++) {
+                  MarketOrder = MarketOrder.connect(accounts[i])
+                  await MarketOrder.Deposit(ArraySL[i], { value: ArrayValue[i] })
+                  console.log(`Account: ${accounts[i].address}  Value: ${ArrayValue[i]} SL: ${ArraySL[i]}`)                
+                }
 
-            //     const AddressOut = MarketOrder.getMembers()
-            //     AddressOut.then(data => {
-            //       console.log(data)
-            //     })
+                const AddressOut = MarketOrder.getMembers()
+                AddressOut.then(data => {
+                  console.log(data)
+                })
 
-            //     //await MarketOrder.performUpkeep([])
-            //     const [condition, WalletNum] = await MarketOrder.checkUpkeep([])
-            //     const { upkeepNeeded } = await MarketOrder.callStatic.checkUpkeep("0x")
-            //     const { num } = await MarketOrder.callStatic.checkUpkeep("0x")
-            //     console.log(`condition: ${condition} nombre: ${num} upkeepNeeded: ${upkeepNeeded}`)
-            //     const EthV = await MarketOrder.OutPrice()
-            //     console.log(`EthV: ${EthV}`)
-            //     await network.provider.request({ method: "evm_mine", params: [] })
+                //await MarketOrder.performUpkeep([])
+                const [condition] = await MarketOrder.checkUpkeep([])
+                const { upkeepNeeded } = await MarketOrder.callStatic.checkUpkeep("0x")
+                const { num } = await MarketOrder.callStatic.checkUpkeep("0x")
+                console.log(`condition: ${condition} nombre: ${num} upkeepNeeded: ${upkeepNeeded}`)
+                const EthV = await MarketOrder.OutPrice()
+                console.log(`EthV: ${EthV}`)
+                await network.provider.request({ method: "evm_mine", params: [] })
 
                 
 
-            //     await MarketOrder.performUpkeep([])
-            //     const { number } = await MarketOrder.callStatic.checkUpkeep("0x")
-            //     console.log(`number: ${number}`)
-            //     // await network.provider.request({ method: "evm_mine", params: [] })
-            //     //assert.equal(EthV, 1500)
+                await MarketOrder.performUpkeep([])
+                const { number } = await MarketOrder.callStatic.checkUpkeep("0x")
+                console.log(`number: ${number}`)
+                // await network.provider.request({ method: "evm_mine", params: [] })
+                //assert.equal(EthV, 1500)
 
 
-            //     const Balance = await MarketOrder.getBalance()
-            //     console.log(`Balance: ${Balance}`)
-            //     for (let i = startingIndex; i < startingIndex + additionalEntrances; i++) {
-            //       MarketOrder = MarketOrder.connect(accounts[i])
-            //       console.log(`Account: ${accounts[i].address}  Value: ${ArrayValue[i]} SL: ${ArraySL[i]}`)                
-            //     }
-            //     for (let i = 0; i < 3; i++) {
-            //       // console.log(`AA ${accounts[i].address}`)
-            //       MarketOrder = MarketOrder.connect(accounts[i])
-            //       const Quantity = await MarketOrder.CallQuantity(accounts[i].address)
-            //       console.log(`Quantity: ${Quantity}`)
-            //       const Stop = await MarketOrder.CallStop(accounts[i].address)
-            //       console.log(`Stop: ${Stop}`)
-            //     }
-            //     const AddressOut1 = MarketOrder.getMembers()
-            //     AddressOut1.then(data => {
-            //       console.log(data)
-            //     })
+                const Balance = await MarketOrder.getBalance()
+                console.log(`Balance: ${Balance}`)
+                for (let i = startingIndex; i < startingIndex + additionalEntrances; i++) {
+                  MarketOrder = MarketOrder.connect(accounts[i])
+                  console.log(`Account: ${accounts[i].address}  Value: ${ArrayValue[i]} SL: ${ArraySL[i]}`)                
+                }
+                for (let i = 0; i < 3; i++) {
+                  // console.log(`AA ${accounts[i].address}`)
+                  MarketOrder = MarketOrder.connect(accounts[i])
+                  const Quantity = await MarketOrder.CallQuantity(accounts[i].address)
+                  console.log(`Quantity: ${Quantity}`)
+                  const Stop = await MarketOrder.CallStop(accounts[i].address)
+                  console.log(`Stop: ${Stop}`)
+                }
+                const AddressOut1 = MarketOrder.getMembers()
+                AddressOut1.then(data => {
+                  console.log(data)
+                })
                 // const nombre = MarketOrder.Numero()
                 // console.log(`nombre: ${nombre}`)
               
-              // })
-              describe("Keepers testing ... ", async function () {
-                it("Calling num", async function () {
+              })
+            //   describe("Keepers testing ... ", async function () {
+            //     it("Calling num", async function () {
                   
-                  const [condition] = await MarketOrder.checkUpkeep([])
-                  const { upkeepNeeded } = await MarketOrder.callStatic.checkUpkeep("0x")
-                  const { num } = await MarketOrder.callStatic.checkUpkeep("0x")
-                  console.log(`condition: ${condition} nombre: ${num} upkeepNeeded: ${upkeepNeeded}`)
-                  await network.provider.request({ method: "evm_mine", params: [] })
+            //       const [condition] = await MarketOrder.checkUpkeep([])
+            //       const { upkeepNeeded } = await MarketOrder.callStatic.checkUpkeep("0x")
+            //       const { num } = await MarketOrder.callStatic.checkUpkeep("0x")
+            //       console.log(`condition: ${condition} nombre: ${num} upkeepNeeded: ${upkeepNeeded}`)
+            //       await network.provider.request({ method: "evm_mine", params: [] })
 
-                  await MarketOrder.performUpkeep([])
-            //     const { number } = await MarketOrder.callStatic.checkUpkeep("0x")
-            //     console.log(`number: ${number}`)
-                  // await network.provider.request({ method: "evm_mine", params: [] })
-            //     //assert.equal(EthV, 1500)
-
-
-                  const nombre = MarketOrder.Decode()
-                  console.log(`nombre: ${nombre.toString()}`)
-                  assert.equal(nombre.toString(), "2")  
+            //       await MarketOrder.performUpkeep([])
+            // //     const { number } = await MarketOrder.callStatic.checkUpkeep("0x")
+            // //     console.log(`number: ${number}`)
+            //       // await network.provider.request({ method: "evm_mine", params: [] })
+            // //     //assert.equal(EthV, 1500)
 
 
-                  })
+            //       const nombre = MarketOrder.Decode()
+            //       console.log(`nombre: ${nombre.toString()}`)
+            //       assert.equal(nombre.toString(), "2")  
+
+
+            //       })
                 })
             })  
         })

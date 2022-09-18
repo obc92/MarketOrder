@@ -31,7 +31,7 @@ contract MarketOrder is KeeperCompatibleInterface {
     constructor ( address priceFeedAddress) {
         i_owner = msg.sender;
         s_AddressFeed = priceFeedAddress;
-        priceFeed = AggregatorV3Interface(s_AddressFeed);//Goerli: 0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e//Rinkeby: 0x8A753747A1Fa494EC906cE90E9f37563A8AF630e
+        priceFeed = AggregatorV3Interface(s_AddressFeed);//Goerli: 0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e//Rinkeby:0x8A753747A1Fa494EC906cE90E9f37563A8AF630e
         
     }
 
@@ -47,11 +47,27 @@ contract MarketOrder is KeeperCompatibleInterface {
             revert Quantity_zero();
         }
         //Add wallet to the s_Wallets
-        s_Wallets.push(payable(msg.sender));
-        //Registre dades
-        Dades storage dades = s_Registre[msg.sender];
-        dades.QuantityETH += msg.value;
-        dades.Stop = StopLoss;
+        bool listed;
+        address[] memory id = new address[](s_Wallets.length);
+        for (uint i = 0; i < s_Wallets.length; i++){
+            id[i] = s_Wallets[i];
+            if (listed = (msg.sender == id[i])) {
+                break;
+            }
+        }
+        if (listed == true){
+            Dades storage dades = s_Registre[msg.sender];
+            dades.QuantityETH += msg.value;
+            dades.Stop = StopLoss;
+        }
+        else {
+            s_Wallets.push(payable(msg.sender));
+            //Registre dades
+            Dades storage dades = s_Registre[msg.sender];
+            dades.QuantityETH += msg.value;
+            dades.Stop = StopLoss;
+        }
+        
     } 
 
     function SetStop(uint256 StopLoss) public {
@@ -124,76 +140,20 @@ contract MarketOrder is KeeperCompatibleInterface {
         return EthPrice;
     }
 //----------------------------------------------------------------------------------------
-    function checkUpkeep(bytes memory /* checkData */) public view override returns (//,bytes memory value
-        bool upkeepNeeded, 
-        bytes memory num
-        ){
-
-        uint256 EthPrice = 0;
-        // uint256 i = 2;
-        EthPrice = getPrice();
-        num = abi.encodePacked(EthPrice);
-        if (EthPrice > 0){
-            upkeepNeeded = true;
-        }
-
-        return (upkeepNeeded, num);//, value
-    }
-
-    function performUpkeep(bytes calldata num) external override {//, bytes calldata value
-        (bool upkeepNeeded, ) = checkUpkeep("");
-        
-        if (!upkeepNeeded) {
-            revert Order__UpkeepNotNeeded(
-                address(this).balance,
-                s_Wallets.length
-            );
-        }
-        //Byte conversion to uint
-        uint256 number;
-        number = abi.decode(num, (uint256));
-
-        // for(uint i=0;i<num.length;i++){
-        //     number = number + uint(uint8(num[i]))*(2**(8*(num.length-(i+1))));
-        // }
-        s_nombre = number;
-    }
-
-
-//-----------------------------------------------------------------------------------------
-    //Keepers
     // function checkUpkeep(bytes memory /* checkData */) public view override returns (//,bytes memory value
     //     bool upkeepNeeded, 
     //     bytes memory num
     //     ){
-        
-    //     bool sellTime; 
-    //     bool Quant;
-    //     uint256 EthPrice;
-    //     // bytes memory Wallet;
-    //     // bytes memory num; 
 
+    //     uint256 EthPrice = 0;
+    //     // uint256 i = 2;
     //     EthPrice = getPrice();
+    //     num = abi.encodePacked(EthPrice);
+    //     // address addr = s_Wallets[0];
+    //     if (EthPrice <= 2000){
+    //         upkeepNeeded = true;
+    //     }
 
-    //     address[] memory id = new address[](s_Wallets.length);
-
-    //     for (uint i = 0; i < s_Wallets.length; i++) {           //Search in loop which Stop should be triggered
-    //       id[i] = s_Wallets[i];
-    //       Dades memory Data = s_Registre[id[i]];
-    //       uint256 SL = Data.Stop;
-    //       uint256 Q = Data.QuantityETH;
-    //       sellTime = (SL < EthPrice); 
-    //       Quant = (Q > 0);
-    //       if (sellTime && Quant){
-    //         num = abi.encodePacked(i);
-    //         // Wallet = abi.encode(id[i]);
-    //         //value = abi.encodePacked(Q);
-    //         upkeepNeeded = (sellTime && Quant);
-    //         break;
-    //       }
-    //       //upkeepNeeded = (sellTime && Quant); //All conditions must be True
-    //     }  
-    //     //upkeepNeeded = true;
     //     return (upkeepNeeded, num);//, value
     // }
 
@@ -208,37 +168,93 @@ contract MarketOrder is KeeperCompatibleInterface {
     //     }
     //     //Byte conversion to uint
     //     uint256 number;
-    //     // uint256 SellQ;
-    //     // (number, SellQ) = abi.decode(num, (uint256, uint256));
-    //     // number = abi.decode(num, (uint256));
-    //     // number = Decode(num);
+    //     number = abi.decode(num, (uint256));
 
-    //     for(uint i=0;i<num.length;i++){
-    //         number = number + uint(uint8(num[i]))*(2**(8*(num.length-(i+1))));
-    //     }
-
-    //     // uint256 Val;
-    //     // for(uint i=0;i<value.length;i++){
-    //     //     Val = Val + uint(uint8(value[i]))*(2**(8*(value.length-(i+1))));
+    //     // for(uint i=0;i<num.length;i++){
+    //     //     number = number + uint(uint8(num[i]))*(2**(8*(num.length-(i+1))));
     //     // }
-        
-    //     //Sell Val in UniswapV3
-    //     // ··············
-    //     // ··············
-
-    //     // RESET DATA FROM WALLET 
-    //     // Reseteja les dades
-    //     Dades storage dades = s_Registre[s_Wallets[number]];
-    //     dades.QuantityETH = 0;
-    //     dades.Stop = 0;
-    //     //Delets wallet from the list
-    //     s_Wallets = Remove(number);
-    //     // s_nombre = number;
+    //     s_nombre = number;
     // }
-//---------------------------------------------------------------------------------------
-    function Decode() public view returns(uint256) {
-        return s_nombre;
+
+
+//-----------------------------------------------------------------------------------------
+    //Keepers
+    function checkUpkeep(bytes memory /* checkData */) public view override returns (//,bytes memory value
+        bool upkeepNeeded, 
+        bytes memory num
+        ){
+        
+        bool sellTime; 
+        bool Quant;
+        uint256 EthPrice;
+        // bytes memory Wallet;
+        // bytes memory num; 
+
+        EthPrice = getPrice();
+
+        address[] memory id = new address[](s_Wallets.length);
+
+        for (uint i = 0; i < s_Wallets.length; i++) {           //Search in loop which Stop should be triggered
+          id[i] = s_Wallets[i];
+          Dades memory Data = s_Registre[id[i]];
+          uint256 SL = Data.Stop;
+          uint256 Q = Data.QuantityETH;
+          sellTime = (SL >= EthPrice); 
+          Quant = (Q > 0);
+          if (sellTime && Quant){
+            num = abi.encodePacked(i,Q);
+            // Wallet = abi.encode(id[i]);
+            //value = abi.encodePacked(Q);
+            upkeepNeeded = (sellTime && Quant);
+            break;
+          }
+          //upkeepNeeded = (sellTime && Quant); //All conditions must be True
+        }  
+        //upkeepNeeded = true;
+        return (upkeepNeeded, num);//, value
     }
+
+    function performUpkeep(bytes calldata num) external override {//, bytes calldata value
+        (bool upkeepNeeded, ) = checkUpkeep("");
+        
+        if (!upkeepNeeded) {
+            revert Order__UpkeepNotNeeded(
+                address(this).balance,
+                s_Wallets.length
+            );
+        }
+        //Byte conversion to uint
+        uint256 number;
+        uint256 SellQ;
+        (number, SellQ) = abi.decode(num, (uint256, uint256));
+        // number = abi.decode(num, (uint256));
+        // number = Decode(num);
+
+        // for(uint i=0;i<num.length;i++){
+        //     number = number + uint(uint8(num[i]))*(2**(8*(num.length-(i+1))));
+        // }
+
+        // uint256 Val;
+        // for(uint i=0;i<value.length;i++){
+        //     Val = Val + uint(uint8(value[i]))*(2**(8*(value.length-(i+1))));
+        // }
+        
+        //Sell Val in UniswapV3
+        // ··············
+        // ··············
+
+        // RESET DATA FROM WALLET 
+        // Reseteja les dades
+        Dades storage dades = s_Registre[s_Wallets[number]];
+        dades.QuantityETH = 0;
+        dades.Stop = 0;
+        //Delets wallet from the list
+        s_Wallets = Remove(number);
+    }
+//---------------------------------------------------------------------------------------
+    // function Decode() public view returns(uint256) {
+    //     return s_nombre;
+    // }
 
     // Public view functions
     // function Numero() public view returns(uint256) {
