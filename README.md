@@ -9,11 +9,15 @@ Goerli scan:  https://goerli.etherscan.io/
 
 To keep in mind:
 
-## There is no restriction on the SL value, if the value is set above the Eth value the position will be inmediatelly sold.
-## UniswapV3 pools on Goerli testnet does not repressent the same values as the mainnet so ETH/USDC pool could have a 1ETH = 200$ value and change to a complete different value the next hour. 
+There is no restriction on the SL value, if the value is set above the Eth value the position will be inmediatelly sold.
+UniswapV3 pools on Goerli testnet does not repressent the same values as the mainnet so ETH/USDC pool could have a 1ETH = 200$ value and change to a complete different value the next hour. 
 
-## Once ETH is sent to the contract and SL is set, the contract will work automatically selling the position once the SL is reached and sending the USDC amount to your wallet address.
-## Multiple wallets can be registered using this contract
+Once ETH is sent to the contract and SL is set, the contract will work automatically selling the position once the SL is reached and sending the USDC amount to your wallet address.
+Multiple wallets can be registered using this contract
+
+# Interact with the contract
+
+Contract: 0xbc8f6a769e27133c524Fb9d817Fb58b82fb52d80
 
 Add on your MM USDC = 0x07865c6E87B9F70255377e024ace6630C1Eaa37F;
 
