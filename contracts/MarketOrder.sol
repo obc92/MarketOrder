@@ -1,17 +1,33 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
+pragma abicoder v2;//
+
+import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';//
+import '@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol';
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol"; // Keepers import
 import "./TokenPrice.sol";
 
+interface IWETH {//
+    function approve(address guy, uint wad) external returns (bool);
+    function deposit() external payable;
+    function transfer(address to, uint value) external returns (bool);
+    function transferFrom(address src, address dst, uint wad) external returns (bool);
+    function withdraw(uint amt) external;
+    function balanceOf(address own) external returns (uint256);
+}
+
 error Quantity_zero();
 error Wallet_error();
+// error Stop_error();
 error Order__UpkeepNotNeeded(uint256 currentBalance, uint256 PlayersNum);
 
-contract MarketOrder is KeeperCompatibleInterface {
+contract MarketOrder is KeeperCompatibleInterface, ERC20  {// 
     using TokenPrice for uint256; //library
 
+    ISwapRouter public immutable swapRouter;//
     AggregatorV3Interface public priceFeed;
 
     struct Dades {
@@ -26,11 +42,16 @@ contract MarketOrder is KeeperCompatibleInterface {
     address public s_AddressFeed;
     uint256 public s_nombre = 0;
 
+    address public constant weth = 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6; //0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant USDC = 0x07865c6E87B9F70255377e024ace6630C1Eaa37F;//0xEEa85fdf0b05D1E0107A61b4b4DB1f345854B952;//0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
+    uint24 public constant poolFee = 3000;
+    uint256 public UsdOut;
 
-    constructor ( address priceFeedAddress) {
+    constructor (ISwapRouter _swapRouter) ERC20("Wrapped Ether", "WETH") {// address priceFeedAddress  ISwapRouter _swapRouter // ERC20("Wrapped Ether", "WETH")
         i_owner = msg.sender;
-        s_AddressFeed = priceFeedAddress;
+        swapRouter = _swapRouter;//_swapRouter;
+        s_AddressFeed = 0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e;//priceFeedAddress;
         priceFeed = AggregatorV3Interface(s_AddressFeed);//Goerli: 0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e//Rinkeby:0x8A753747A1Fa494EC906cE90E9f37563A8AF630e
         
     }
@@ -41,11 +62,17 @@ contract MarketOrder is KeeperCompatibleInterface {
     }
 
     function Deposit(uint256 StopLoss) public payable {//Deposita quantity i es registre  uint256 StopLoss  //uint256 StopLoss
-        
+
         //Pay subscription
         if (msg.value == 0){
             revert Quantity_zero();
         }
+        //----- Can't send SL above Eth price -----------
+        // uint256 EthVal = getPrice();
+        // if (StopLoss < EthVal){
+        //     revert Stop_error();
+        // }
+
         //Add wallet to the s_Wallets
         bool listed;
         address[] memory id = new address[](s_Wallets.length);
@@ -108,6 +135,7 @@ contract MarketOrder is KeeperCompatibleInterface {
         //Agafa la quanittat que te per fer el W
         Dades memory Quantity = s_Registre[msg.sender];
         uint256 Value = Quantity.QuantityETH;
+        //Executes W
         (bool Success, ) = msg.sender.call{value: Value}("");
         require(Success);
         //Reseteja les dades
@@ -139,45 +167,56 @@ contract MarketOrder is KeeperCompatibleInterface {
         uint256 EthPrice = TokenPrice.dolarValue(priceFeed);
         return EthPrice;
     }
-//----------------------------------------------------------------------------------------
-    // function checkUpkeep(bytes memory /* checkData */) public view override returns (//,bytes memory value
-    //     bool upkeepNeeded, 
-    //     bytes memory num
-    //     ){
-
-    //     uint256 EthPrice = 0;
-    //     // uint256 i = 2;
-    //     EthPrice = getPrice();
-    //     num = abi.encodePacked(EthPrice);
-    //     // address addr = s_Wallets[0];
-    //     if (EthPrice <= 2000){
-    //         upkeepNeeded = true;
-    //     }
-
-    //     return (upkeepNeeded, num);//, value
-    // }
-
-    // function performUpkeep(bytes calldata num) external override {//, bytes calldata value
-    //     (bool upkeepNeeded, ) = checkUpkeep("");
-        
-    //     if (!upkeepNeeded) {
-    //         revert Order__UpkeepNotNeeded(
-    //             address(this).balance,
-    //             s_Wallets.length
-    //         );
-    //     }
-    //     //Byte conversion to uint
-    //     uint256 number;
-    //     number = abi.decode(num, (uint256));
-
-    //     // for(uint i=0;i<num.length;i++){
-    //     //     number = number + uint(uint8(num[i]))*(2**(8*(num.length-(i+1))));
-    //     // }
-    //     s_nombre = number;
-    // }
-
 
 //-----------------------------------------------------------------------------------------
+    //UniswapV3 & wrapped eth
+    function wrap(uint256 SellQ) internal {
+        //uint256 Wbal = SellQ;
+        IWETH(weth).deposit{value: SellQ}();
+        // IERC20(weth).deposit{value: Wbal}();
+    }
+
+    function WETHTokenBalance() public view returns(uint) {
+        ERC20 token = ERC20(weth); // token is cast as type IERC20, so it's a contract
+        return token.balanceOf(address(this));
+    }
+
+    // function WETHTokenBalance() internal returns(uint) {
+    //     // ERC20 token = ERC20(weth); // token is cast as type IERC20, so it's a contract
+    //     // return token.balanceOf(address(this));
+    //     uint wethtoken = IWETH(weth).balanceOf(address(this));
+    //     return wethtoken;
+    // }
+
+    function swapExactInputSingle(uint256 SellQ, address selWallet) internal returns (uint256 amountOut){//uint256 amountIn
+    
+        wrap(SellQ);
+        uint balance = WETHTokenBalance();
+
+        // // Approve the router to spend weth.
+        TransferHelper.safeApprove(weth, address(swapRouter), balance);
+
+        // Naively set amountOutMinimum to 0. In production, use an oracle or other data source to choose a safer value for amountOutMinimum.
+        // We also set the sqrtPriceLimitx96 to be 0 to ensure we swap our exact input amount.
+        ISwapRouter.ExactInputSingleParams memory params =
+            ISwapRouter.ExactInputSingleParams({
+                tokenIn: weth,
+                tokenOut: USDC,
+                fee: poolFee,
+                recipient: selWallet,
+                deadline: block.timestamp,
+                amountIn: balance,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+
+        // The call to `exactInputSingle` executes the swap.
+        amountOut = swapRouter.exactInputSingle(params);
+        // return amountOut;
+        UsdOut = amountOut;
+        
+    }
+
     //Keepers
     function checkUpkeep(bytes memory /* checkData */) public view override returns (//,bytes memory value
         bool upkeepNeeded, 
@@ -239,9 +278,9 @@ contract MarketOrder is KeeperCompatibleInterface {
         //     Val = Val + uint(uint8(value[i]))*(2**(8*(value.length-(i+1))));
         // }
         
-        //Sell Val in UniswapV3
-        // ··············
-        // ··············
+        //---------------------Sell Val in UniswapV3------------------------
+        address selWallet = s_Wallets[number];
+        swapExactInputSingle(SellQ, selWallet);
 
         // RESET DATA FROM WALLET 
         // Reseteja les dades
@@ -251,15 +290,19 @@ contract MarketOrder is KeeperCompatibleInterface {
         //Delets wallet from the list
         s_Wallets = Remove(number);
     }
-//---------------------------------------------------------------------------------------
-    // function Decode() public view returns(uint256) {
-    //     return s_nombre;
+//----------------------------------- View functions ----------------------------------------------------
+    //## View function with the oppenzeppelin contract, solc version not compiling
+    // function WETHTokenBalance() public view returns(uint) {
+    //     ERC20 token = ERC20(weth); // token is cast as type IERC20, so it's a contract
+    //     return token.balanceOf(address(this));
     // }
 
-    // Public view functions
-    // function Numero() public view returns(uint256) {
-    //     return s_nombre;
+    // function USDCTokenBalance() public view returns(uint) {
+    //     ERC20 token = ERC20(USDC); // token is cast as type IERC20, so it's a contract
+    //     return token.balanceOf(msg.sender);
     // }
+
+
     function ActualFeed() public view returns(address) {
         return s_AddressFeed;
     }
@@ -287,7 +330,7 @@ contract MarketOrder is KeeperCompatibleInterface {
     function getBalance() public view returns (uint256){
         return (address(this).balance);
     }
-    function OutPrice() public view returns (uint256){
+    function EtherPrice() public view returns (uint256){
         uint256 EthP = getPrice();
         return (EthP);
     }

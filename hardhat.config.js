@@ -20,9 +20,10 @@ const KOVAN_RPC_URL = process.env.KOVAN_RPC_URL
 const MAINNET_RPC_URL = process.env.MAINNET_RPC_URL
 
 module.exports = {
-  // solidity: "0.8.8",
+  // solidity: "0.8.8",  >=0.6.0 <0.8.0  , {version: "0.7.0"}, ,
+      // {version: "0.6.0"}, {version: "0.8.9"}, {version: "0.7.5"}, {version: "0.5.0"}
   solidity: {
-      compilers: [{version: "0.8.8"}, {version: "0.6.6"}, {version: "0.4.19"}, {version: "0.6.12"}],
+      compilers: [{version: "0.6.6"}, {version: "0.4.19"}, {version: "0.6.12"}, {version: "0.8.8"}, {version: "0.7.0"}]
   },
   defaultNetwork: "hardhat",
   networks: {

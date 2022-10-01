@@ -1,6 +1,8 @@
 const { assert, expect } = require("chai")
 const { network, deployments, ethers, getNamedAccounts, provider } = require("hardhat")
 const { developmentChains, networkConfig } = require("../helper-hardhat-config.js")
+// import { Pool } from '@uniswap/v3-sdk'
+const {Pool} = require("@uniswap/v3-sdk")
 
 !developmentChains.includes(network.name)
     ? describe.skip
